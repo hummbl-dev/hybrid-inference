@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hybrid-inference.local/schemas/edr/EDR_v1.0.0.json",
+  "title": "Execution Decision Record v1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "edr_version",
+    "timestamp",
+    "request_id",
+    "contract_hash",
+    "policy_version",
+    "decision",
+    "decision_factors",
+    "constraints_applied",
+    "input_hash",
+    "output_hash",
+    "decision_core_hash",
+    "edr_hash",
+    "failure",
+    "side_effects",
+    "replay"
+  ],
+  "properties": {
+    "edr_version": { "type": "string", "const": "1.0.0" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "request_id": { "type": "string", "minLength": 1 },
+    "contract_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "policy_version": { "type": "string", "minLength": 1 },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "protocol", "path"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "model": { "type": "string" },
+        "protocol": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "decision_factors": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "constraints_applied": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "input_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "output_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "decision_core_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "edr_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "failure": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "stage", "message"],
+          "properties": {
+            "type": { "type": "string", "minLength": 1 },
+            "stage": { "type": "string", "minLength": 1 },
+            "message": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "side_effects": { "type": "string", "enum": ["none", "read", "write", "external"] },
+    "replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["replayable", "required_inputs_pointer"],
+      "properties": {
+        "replayable": { "type": "boolean" },
+        "required_inputs_pointer": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
