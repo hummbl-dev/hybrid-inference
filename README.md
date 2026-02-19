@@ -21,6 +21,8 @@ bash scripts/bootstrap_test_env.sh
 bash scripts/run_ci_local_gates.sh
 ```
 
+CI runs the same `scripts/run_ci_local_gates.sh` sequence after bootstrap to preserve local/CI parity.
+
 ## EDR artifacts
 Each request writes a schema-validated EDR artifact to:
 
