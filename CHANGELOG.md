@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+- Added GitHub Actions CI workflow for push/pull request validation.
+- CI now runs dependency install, EDR schema hash pin validation, and `pytest -q` across Python 3.11 and 3.12.
+
 ## 0.2.1
 - Added top-level uncaught exception EDR emission middleware for `/v1/chat/completions`.
 - Added atomic EDR artifact persistence (write + fsync + rename) to prevent partial files.
