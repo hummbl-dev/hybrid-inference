@@ -35,6 +35,12 @@ jobs:
       - name: Verify CAES spec hash pin
         run: sha256sum -c governance/CAES_CANONICAL.sha256
 
+      - name: Validate replay report schema hash pin
+        run: |
+          expected="84362e7b44c4528048fb66625dc886c5548730ef4c5ff53273d26d89aeedd3b8"
+          actual="$(sha256sum schemas/replay/REPLAY_REPORT_v1.0.0.json | awk '{print $1}')"
+          test "$actual" = "$expected"
+
       - name: Replay smoke tests
         run: pytest -q tests/test_edr_replay.py
 

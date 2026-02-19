@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hybrid-inference.local/schemas/replay/REPLAY_REPORT_v1.0.0.json",
+  "title": "Replay Report v1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "replay_report_version",
+    "timestamp",
+    "source_edr_path",
+    "decision_core_hash",
+    "status",
+    "reason_codes",
+    "checks",
+    "edr_hash_expected",
+    "edr_hash_observed",
+    "input_hash_expected",
+    "input_hash_observed",
+    "output_hash_expected",
+    "output_hash_observed",
+    "decision_core_hash_expected",
+    "decision_core_hash_observed",
+    "report_hash"
+  ],
+  "properties": {
+    "replay_report_version": { "type": "string", "const": "1.0.0" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "source_edr_path": { "type": "string", "minLength": 1 },
+    "decision_core_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": {
+      "type": "string",
+      "enum": ["MATCH", "DIVERGED", "REFUSED", "ERROR"]
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" }
+    },
+    "edr_hash_expected": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "edr_hash_observed": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "input_hash_expected": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "input_hash_observed": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "output_hash_expected": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "output_hash_observed": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "decision_core_hash_expected": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "decision_core_hash_observed": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "report_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

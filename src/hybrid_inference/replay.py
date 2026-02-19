@@ -34,16 +34,22 @@ class DivergenceReason(StrEnum):
 
 @dataclass(frozen=True)
 class ReplayReport:
-    replay_version: str
+    replay_report_version: str
     timestamp: str
     source_edr_path: str
-    source_request_id: str
-    source_decision_core_hash: str
+    decision_core_hash: str
     status: str
     reason_codes: list[str]
     checks: dict[str, bool]
-    expected: dict[str, str]
-    actual: dict[str, str]
+    edr_hash_expected: str
+    edr_hash_observed: str | None
+    input_hash_expected: str
+    input_hash_observed: str | None
+    output_hash_expected: str
+    output_hash_observed: str | None
+    decision_core_hash_expected: str
+    decision_core_hash_observed: str | None
+    report_hash: str
 
 
 class ReplayError(RuntimeError):
@@ -163,7 +169,7 @@ def replay_storage_path(root: str, decision_id: str, timestamp: str) -> Path:
 
 
 def persist_replay_report(root: str, report: ReplayReport) -> Path:
-    target = replay_storage_path(root, report.source_decision_core_hash, report.timestamp)
+    target = replay_storage_path(root, report.decision_core_hash, report.timestamp)
     target.parent.mkdir(parents=True, exist_ok=True)
 
     tmp_target = target.with_suffix(".tmp")
@@ -174,6 +180,11 @@ def persist_replay_report(root: str, report: ReplayReport) -> Path:
 
     os.replace(tmp_target, target)
     return target
+
+
+def _report_with_hash(payload: dict[str, Any]) -> ReplayReport:
+    report_hash = hash_json(payload)
+    return ReplayReport(**payload, report_hash=report_hash)
 
 
 def replay_edr(
@@ -193,6 +204,10 @@ def replay_edr(
         "decision_core_hash_match": False,
         "edr_hash_match": False,
     }
+    observed_input_hash: str | None = None
+    observed_output_hash: str | None = None
+    observed_decision_core_hash: str | None = None
+    observed_edr_hash: str | None = None
 
     try:
         if edr.get("side_effects") != "none" and not allow_side_effects:
@@ -212,6 +227,10 @@ def replay_edr(
 
         output_payload = _execute_replay(edr, input_payload, runtime_environment)
         recomputed = _recompute_hashes(edr, input_payload, output_payload)
+        observed_input_hash = recomputed["input_hash"]
+        observed_output_hash = recomputed["output_hash"]
+        observed_decision_core_hash = recomputed["decision_core_hash"]
+        observed_edr_hash = recomputed["edr_hash"]
 
         checks["input_hash_match"] = recomputed["input_hash"] == edr.get("input_hash")
         checks["output_hash_match"] = recomputed["output_hash"] == edr.get("output_hash")
@@ -232,34 +251,31 @@ def replay_edr(
             reason_codes.append(DivergenceReason.EDR_HASH_MISMATCH.value)
 
         status = ReplayStatus.MATCH if not reason_codes else ReplayStatus.DIVERGED
-        actual = recomputed
 
     except ReplayError as exc:
         reason_codes.append(exc.reason.value)
         status = ReplayStatus.REFUSED if exc.reason == DivergenceReason.SIDE_EFFECTS_REFUSED else ReplayStatus.ERROR
-        actual = {"error": str(exc)}
-    except Exception as exc:  # pragma: no cover
+    except Exception:  # pragma: no cover
         reason_codes.append(DivergenceReason.EXECUTION_ERROR.value)
         status = ReplayStatus.ERROR
-        actual = {"error": str(exc)}
-
-    report = ReplayReport(
-        replay_version="1.0.0",
-        timestamp=dt.datetime.now(dt.timezone.utc).isoformat(),
-        source_edr_path=str(source_path),
-        source_request_id=str(edr.get("request_id", "")),
-        source_decision_core_hash=str(edr.get("decision_core_hash", "")),
-        status=status.value,
-        reason_codes=reason_codes,
-        checks=checks,
-        expected={
-            "input_hash": str(edr.get("input_hash", "")),
-            "output_hash": str(edr.get("output_hash", "")),
-            "decision_core_hash": str(edr.get("decision_core_hash", "")),
-            "edr_hash": str(edr.get("edr_hash", "")),
-        },
-        actual=actual,
-    )
+    report_payload: dict[str, Any] = {
+        "replay_report_version": "1.0.0",
+        "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "source_edr_path": str(source_path),
+        "decision_core_hash": str(edr.get("decision_core_hash", "")),
+        "status": status.value,
+        "reason_codes": reason_codes,
+        "checks": checks,
+        "edr_hash_expected": str(edr.get("edr_hash", "")),
+        "edr_hash_observed": observed_edr_hash,
+        "input_hash_expected": str(edr.get("input_hash", "")),
+        "input_hash_observed": observed_input_hash,
+        "output_hash_expected": str(edr.get("output_hash", "")),
+        "output_hash_observed": observed_output_hash,
+        "decision_core_hash_expected": str(edr.get("decision_core_hash", "")),
+        "decision_core_hash_observed": observed_decision_core_hash,
+    }
+    report = _report_with_hash(report_payload)
     report_path = persist_replay_report(output_root, report)
     return report, report_path
 
