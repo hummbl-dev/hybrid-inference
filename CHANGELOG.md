@@ -5,6 +5,11 @@
 - Added operator reference for replay reason codes in `docs/replay-reason-codes.md`.
 - Replay now emits structured replay reports with `EXECUTION_ERROR` for malformed/non-object EDR JSON roots instead of surfacing uncaught loader errors.
 
+## 0.2.4
+- Added deterministic bootstrap script `scripts/bootstrap_test_env.sh` for local + CI dependency parity.
+- Added one-command parity runner `scripts/run_ci_local_gates.sh` that mirrors CI schema/hash gates and pytest sequence.
+- Updated CI to use shared bootstrap path and `.venv/bin/pytest` execution.
+
 ## 0.2.2
 - Added GitHub Actions CI workflow for push/pull request validation.
 - CI now runs dependency install, EDR schema hash pin validation, and `pytest -q` across Python 3.11 and 3.12.
