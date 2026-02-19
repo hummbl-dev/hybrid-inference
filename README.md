@@ -11,10 +11,14 @@ Policy-driven hybrid inference router for local-first (Ollama) with Anthropic/Op
 
 ## Quick start
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+bash scripts/bootstrap_test_env.sh
 uvicorn src.router.main:app --host 127.0.0.1 --port 8088
+```
+
+## Deterministic test bootstrap (local == CI)
+```bash
+bash scripts/bootstrap_test_env.sh
+bash scripts/run_ci_local_gates.sh
 ```
 
 ## EDR artifacts

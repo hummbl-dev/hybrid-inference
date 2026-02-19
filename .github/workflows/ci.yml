@@ -22,9 +22,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: bash scripts/bootstrap_test_env.sh
 
       - name: Validate EDR schema hash pin
         run: |
@@ -42,13 +40,13 @@ jobs:
           test "$actual" = "$expected"
 
       - name: Replay invariant adversarial gates
-        run: pytest -q tests/test_edr_replay.py -k "not reason_code_contract_lock and not reason_codes_emitted_are_within_contract"
+        run: .venv/bin/pytest -q tests/test_edr_replay.py -k "not reason_code_contract_lock and not reason_codes_emitted_are_within_contract"
 
       - name: Replay reason-code contract lock gate
-        run: pytest -q tests/test_edr_replay.py -k "reason_code_contract_lock or reason_codes_emitted_are_within_contract"
+        run: .venv/bin/pytest -q tests/test_edr_replay.py -k "reason_code_contract_lock or reason_codes_emitted_are_within_contract"
 
       - name: Authority invariant adversarial gates
-        run: pytest -q tests/test_authority.py
+        run: .venv/bin/pytest -q tests/test_authority.py
 
       - name: Run tests
-        run: pytest -q
+        run: .venv/bin/pytest -q
