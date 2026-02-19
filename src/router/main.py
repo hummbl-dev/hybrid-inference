@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from src.hybrid_inference.edr import EDRFailure
 from src.hybrid_inference.middleware.edr_emitter import emit_edr
 from .audit.log import audit_append, sha256_hex
+from .authority import AuthorityError, validate_authority
 from .health.local_health import check_local_health
 from .policy.engine import decide
 from .providers.ollama import ollama_chat
@@ -54,6 +55,7 @@ class ChatReq(BaseModel):
     messages: list[dict[str, Any]] = Field(default_factory=list)
     stream: bool = False
     routing_contract: dict[str, Any] | None = None
+    authority: dict[str, Any] | None = None
 
 
 @app.get("/health")
@@ -68,6 +70,33 @@ async def chat(req: ChatReq, request: Request) -> dict[str, Any]:
     contract = req.routing_contract or {"classification": "INTERNAL", "latency": "interactive"}
     msg_bytes = str(req.messages).encode("utf-8")
     input_payload = {"messages_sha256": sha256_hex(msg_bytes), "stream": req.stream, "model": req.model}
+    authority_required = bool(contract.get("authority_required", False))
+    constraints_applied = [
+        f"max_swap_bytes={settings.max_swap_bytes}",
+        f"max_mem_percent={settings.max_mem_percent}",
+        f"authority_required={authority_required}",
+    ]
+
+    try:
+        validate_authority(
+            req.authority,
+            required_scope="chat:completions",
+            authority_required=authority_required,
+        )
+    except AuthorityError as exc:
+        output_payload = {"error": "authority_violation", "reason_code": exc.code}
+        emit_edr(
+            edr_root=settings.edr_root_path,
+            request_id=request_id,
+            contract=contract,
+            decision={"provider": "reject", "model": "", "protocol": "http", "path": "/v1/chat/completions"},
+            decision_factors=[exc.code],
+            constraints_applied=constraints_applied,
+            input_payload=input_payload,
+            output_payload=output_payload,
+            failure=EDRFailure(type="authority_violation", stage="authority", message=exc.message),
+        )
+        raise HTTPException(status_code=403, detail={"request_id": request_id, "reason_codes": [exc.code]})
 
     current = check_local_health(settings.max_swap_bytes, settings.max_mem_percent)
     decision = decide(contract, current.ok, settings.ollama_router_model, settings.ollama_deep_model)
@@ -77,7 +106,6 @@ async def chat(req: ChatReq, request: Request) -> dict[str, Any]:
         "protocol": "http",
         "path": "/v1/chat/completions",
     }
-    constraints_applied = [f"max_swap_bytes={settings.max_swap_bytes}", f"max_mem_percent={settings.max_mem_percent}"]
 
     audit_append(
         settings.audit_log_path,
@@ -92,6 +120,8 @@ async def chat(req: ChatReq, request: Request) -> dict[str, Any]:
             "messages_sha256": sha256_hex(msg_bytes),
             "local_health_ok": current.ok,
             "local_health_reason": current.reason,
+            "authority_present": req.authority is not None,
+            "authority_required": authority_required,
         },
     )
 
