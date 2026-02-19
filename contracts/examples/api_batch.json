@@ -1,0 +1,6 @@
+{
+  "classification": "INTERNAL",
+  "latency": "batch",
+  "max_cost_usd": 2.0,
+  "provider_allowlist": ["openai", "anthropic", "local"]
+}

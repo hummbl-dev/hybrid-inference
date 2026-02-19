@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate EDR schema hash pin
+        run: |
+          expected="2228890cb38c4d89a2a4ab46ba1b1430c2066f8c74548b8beb95e298f87ad45a"
+          actual="$(sha256sum schemas/edr/EDR_v1.0.0.json | awk '{print $1}')"
+          test "$actual" = "$expected"
+
+      - name: Verify CAES spec hash pin
+        run: sha256sum -c governance/CAES_CANONICAL.sha256
+
+      - name: Run tests
+        run: pytest -q

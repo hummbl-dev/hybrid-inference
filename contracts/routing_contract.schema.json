@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hybrid Inference Routing Contract v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["classification", "latency"],
+  "properties": {
+    "classification": {
+      "type": "string",
+      "enum": ["PUBLIC", "INTERNAL", "SENSITIVE", "SECRET"]
+    },
+    "latency": {
+      "type": "string",
+      "enum": ["interactive", "batch"]
+    },
+    "max_cost_usd": {
+      "type": "number",
+      "minimum": 0
+    },
+    "requires": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["tool_calls", "long_context", "json_mode", "vision"]
+      },
+      "uniqueItems": true
+    },
+    "provider_allowlist": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["local", "anthropic", "openai"]
+      },
+      "uniqueItems": true
+    },
+    "model_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    }
+  }
+}
