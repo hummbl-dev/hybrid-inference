@@ -40,6 +40,7 @@ Safety defaults:
 - Uses deterministic local replay only (no external provider calls).
 - Writes replay reports to `artifacts/replay/YYYY/MM/DD/<decision_core_hash>.json`.
 - Replay report schema is pinned at `schemas/replay/REPLAY_REPORT_v1.0.0.json`.
+- CI runs adversarial replay invariant gates (`tests/test_edr_replay.py`) before full suite.
 
 ## Authority + lease boundary
 `/v1/chat/completions` accepts optional `authority`:
@@ -54,3 +55,5 @@ Safety defaults:
 ```
 
 When `routing_contract.authority_required` is `true`, missing/invalid authority is rejected at router boundary (`403`) and emitted as EDR failure type `authority_violation`.
+
+CI runs authority adversarial invariant gates (`tests/test_authority.py`) to guard replay-safe lease handling and strict authority validation failures.

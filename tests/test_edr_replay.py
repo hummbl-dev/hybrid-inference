@@ -140,6 +140,52 @@ def test_replay_refuses_network_without_flag(tmp_path):
     assert "NETWORK_NOT_ALLOWED" in report.reason_codes
 
 
+def test_replay_errors_when_edr_marked_non_replayable(tmp_path):
+    edr_path = _build_replay_fixture(tmp_path)
+    edr_payload = json.loads(edr_path.read_text())
+    edr_payload["replay"]["replayable"] = False
+    _write_json(edr_path, edr_payload)
+
+    report, _ = replay_edr(
+        str(edr_path),
+        output_root=str(tmp_path / "artifacts" / "replay"),
+        runtime_environment="ci-stub",
+    )
+
+    assert report.status == ReplayStatus.ERROR.value
+    assert "REPLAY_NOT_REPLAYABLE" in report.reason_codes
+
+
+def test_replay_errors_when_required_inputs_pointer_missing(tmp_path):
+    edr_path = _build_replay_fixture(tmp_path)
+    edr_payload = json.loads(edr_path.read_text())
+    edr_payload["replay"]["required_inputs_pointer"] = ""
+    _write_json(edr_path, edr_payload)
+
+    report, _ = replay_edr(
+        str(edr_path),
+        output_root=str(tmp_path / "artifacts" / "replay"),
+        runtime_environment="ci-stub",
+    )
+
+    assert report.status == ReplayStatus.ERROR.value
+    assert "INPUT_POINTER_MISSING" in report.reason_codes
+
+
+def test_replay_errors_when_provider_unsupported_even_if_network_allowed(tmp_path):
+    edr_path = _build_network_replay_fixture(tmp_path)
+
+    report, _ = replay_edr(
+        str(edr_path),
+        output_root=str(tmp_path / "artifacts" / "replay"),
+        runtime_environment="ci-stub",
+        allow_network=True,
+    )
+
+    assert report.status == ReplayStatus.ERROR.value
+    assert "PROVIDER_NOT_SUPPORTED" in report.reason_codes
+
+
 def test_replay_diverges_on_environment_mismatch(tmp_path):
     edr_path = _build_replay_fixture(tmp_path)
 
