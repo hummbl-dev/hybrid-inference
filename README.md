@@ -2,7 +2,7 @@
 
 Policy-driven hybrid inference router for local-first (Ollama) with Anthropic/OpenAI fallback paths.
 
-## v0.2.1 goals
+## v0.2.2 goals
 - Deterministic routing contract.
 - Local health gating.
 - Single heavy local inference slot.

@@ -15,7 +15,7 @@ from .providers.ollama import ollama_chat
 from .queue.heavy_slot import HeavySlot
 from .settings import settings
 
-app = FastAPI(title="hybrid-inference", version="0.2.1")
+app = FastAPI(title="hybrid-inference", version="0.2.2")
 heavy = HeavySlot(settings.heavy_slot_concurrency)
 
 
