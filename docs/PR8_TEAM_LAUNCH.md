@@ -3,6 +3,39 @@
 ## Mission
 Deliver PR8 with strict scope control, schema/governance integrity, runtime safety, and adversarial test coverage.
 
+## Goal
+Add explicit CI invariant adversarial gates that prove authority-boundary safety and replay safety remain intact across future changes.
+
+## Necessary
+- Add authority adversarial tests for:
+  - lease replay denial,
+  - lease ID whitespace canonicalization (bypass resistance),
+  - invalid scope type rejection with EDR failure evidence.
+- Add replay adversarial tests for:
+  - non-replayable EDR rejection,
+  - missing replay input pointer rejection,
+  - unsupported provider error when network is explicitly allowed.
+- Wire CI to run `tests/test_edr_replay.py` and `tests/test_authority.py` as dedicated invariant gates before full `pytest -q`.
+- Document these dedicated invariant gates in `README.md`.
+
+## Out Of Scope
+- Changing runtime policy or authority semantics.
+- Modifying replay report schema versions or schema pins.
+- Expanding provider implementations for offline replay.
+- Refactoring router internals unrelated to authority/replay invariants.
+
+## Test Matrix
+| Area | Invariant | Test |
+|---|---|---|
+| Authority | Missing authority when required is rejected with `403` and EDR authority violation | `tests/test_authority.py::test_authority_required_missing_rejected_and_edr_logged` |
+| Authority | Lease replay is denied | `tests/test_authority.py::test_authority_lease_replay_rejected` |
+| Authority | Lease ID canonicalization prevents whitespace replay bypass | `tests/test_authority.py::test_authority_lease_id_whitespace_canonicalization_blocks_replay_bypass` |
+| Authority | Invalid scope type is rejected and emitted to EDR | `tests/test_authority.py::test_authority_scope_invalid_type_rejected_and_edr_logged` |
+| Replay | Non-replayable artifacts error out | `tests/test_edr_replay.py::test_replay_errors_when_edr_marked_non_replayable` |
+| Replay | Missing required inputs pointer errors out | `tests/test_edr_replay.py::test_replay_errors_when_required_inputs_pointer_missing` |
+| Replay | Networkless safety refusal remains enforced by default | `tests/test_edr_replay.py::test_replay_refuses_network_without_flag` |
+| Replay | Unsupported provider still errors even when network allowed | `tests/test_edr_replay.py::test_replay_errors_when_provider_unsupported_even_if_network_allowed` |
+
 ## Core Team
 
 ### 1) Release-Integrator (Lead)

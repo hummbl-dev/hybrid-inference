@@ -41,8 +41,11 @@ jobs:
           actual="$(sha256sum schemas/replay/REPLAY_REPORT_v1.0.0.json | awk '{print $1}')"
           test "$actual" = "$expected"
 
-      - name: Replay smoke tests
+      - name: Replay invariant adversarial gates
         run: pytest -q tests/test_edr_replay.py
+
+      - name: Authority invariant adversarial gates
+        run: pytest -q tests/test_authority.py
 
       - name: Run tests
         run: pytest -q
