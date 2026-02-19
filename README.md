@@ -41,6 +41,10 @@ Safety defaults:
 - Writes replay reports to `artifacts/replay/YYYY/MM/DD/<decision_core_hash>.json`.
 - Replay report schema is pinned at `schemas/replay/REPLAY_REPORT_v1.0.0.json`.
 - CI runs adversarial replay invariant gates (`tests/test_edr_replay.py`) before full suite.
+- CI enforces replay reason-code contract lock:
+  - `REFUSED`: `SIDE_EFFECTS_NOT_ALLOWED`, `NETWORK_NOT_ALLOWED`
+  - `ERROR`: `REPLAY_NOT_REPLAYABLE`, `INPUT_POINTER_MISSING`, `PROVIDER_NOT_SUPPORTED`, `EXECUTION_ERROR`
+  - `DIVERGED`: `INPUT_HASH_MISMATCH`, `OUTPUT_HASH_MISMATCH`, `DECISION_CORE_MISMATCH`, `EDR_HASH_MISMATCH`, `ENVIRONMENT_MISMATCH`
 
 ## Authority + lease boundary
 `/v1/chat/completions` accepts optional typed `authority`:

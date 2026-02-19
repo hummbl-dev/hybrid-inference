@@ -210,7 +210,7 @@ def replay_edr(
     runtime_environment: str = "default",
 ) -> tuple[ReplayReport, Path]:
     source_path = Path(edr_path).resolve()
-    edr = _load_json(source_path)
+    edr: dict[str, Any] = {}
 
     reason_codes: list[str] = []
     checks = {
@@ -225,6 +225,8 @@ def replay_edr(
     observed_edr_hash: str | None = None
 
     try:
+        edr = _load_json(source_path)
+
         if edr.get("side_effects") != "none" and not allow_side_effects:
             raise ReplayError(
                 DivergenceReason.SIDE_EFFECTS_NOT_ALLOWED,
