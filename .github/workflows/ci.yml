@@ -35,5 +35,8 @@ jobs:
       - name: Verify CAES spec hash pin
         run: sha256sum -c governance/CAES_CANONICAL.sha256
 
+      - name: Replay smoke tests
+        run: pytest -q tests/test_edr_replay.py
+
       - name: Run tests
         run: pytest -q
