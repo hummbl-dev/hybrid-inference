@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from src.hybrid_inference.edr import build_edr, canonicalize
@@ -99,3 +100,21 @@ def test_replay_diverges_on_environment_mismatch(tmp_path):
     assert "ENVIRONMENT_MISMATCH" in report.reason_codes
     assert report.checks["input_hash_match"] is True
     assert report.checks["output_hash_match"] is False
+
+
+def test_replay_diverges_when_decision_core_mismatch_with_matching_output_hash(tmp_path):
+    edr_path = _build_replay_fixture(tmp_path)
+    edr_payload = json.loads(edr_path.read_text())
+    edr_payload["decision_factors"] = ["TAMPERED_FACTOR"]
+    _write_json(edr_path, edr_payload)
+
+    report, _ = replay_edr(
+        str(edr_path),
+        output_root=str(tmp_path / "artifacts" / "replay"),
+        runtime_environment="ci-stub",
+    )
+
+    assert report.status == ReplayStatus.DIVERGED.value
+    assert report.checks["output_hash_match"] is True
+    assert report.checks["decision_core_hash_match"] is False
+    assert "DECISION_CORE_HASH_MISMATCH" in report.reason_codes

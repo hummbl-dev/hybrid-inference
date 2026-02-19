@@ -208,8 +208,7 @@ def replay_edr(
             raise ReplayError(DivergenceReason.INPUT_POINTER_MISSING, "required input_payload object not present")
 
         expected_env = required_inputs.get("runtime_environment")
-        if expected_env is not None and expected_env != runtime_environment:
-            reason_codes.append(DivergenceReason.ENVIRONMENT_MISMATCH.value)
+        environment_mismatch = expected_env is not None and expected_env != runtime_environment
 
         output_payload = _execute_replay(edr, input_payload, runtime_environment)
         recomputed = _recompute_hashes(edr, input_payload, output_payload)
@@ -223,6 +222,8 @@ def replay_edr(
             reason_codes.append(DivergenceReason.INPUT_HASH_MISMATCH.value)
         if not checks["output_hash_match"]:
             reason_codes.append(DivergenceReason.OUTPUT_HASH_MISMATCH.value)
+            if environment_mismatch:
+                reason_codes.append(DivergenceReason.ENVIRONMENT_MISMATCH.value)
         if not checks["decision_core_hash_match"]:
             reason_codes.append(DivergenceReason.DECISION_CORE_HASH_MISMATCH.value)
         if not checks["edr_hash_match"]:
