@@ -21,6 +21,8 @@ class ReplayStatus(StrEnum):
 
 class DivergenceReason(StrEnum):
     SIDE_EFFECTS_REFUSED = "SIDE_EFFECTS_REFUSED"
+    SIDE_EFFECTS_NOT_ALLOWED = "SIDE_EFFECTS_NOT_ALLOWED"
+    NETWORK_NOT_ALLOWED = "NETWORK_NOT_ALLOWED"
     REPLAY_NOT_REPLAYABLE = "REPLAY_NOT_REPLAYABLE"
     INPUT_POINTER_MISSING = "INPUT_POINTER_MISSING"
     INPUT_HASH_MISMATCH = "INPUT_HASH_MISMATCH"
@@ -119,6 +121,18 @@ def _execute_replay(
     raise ReplayError(DivergenceReason.PROVIDER_NOT_SUPPORTED, f"provider {provider!r} is not supported for offline replay")
 
 
+def _is_networked_replay(decision: dict[str, Any]) -> bool:
+    provider = str(decision.get("provider", ""))
+    protocol = str(decision.get("protocol", "")).lower()
+    if provider in {"local", "local_stub"}:
+        return False
+    if protocol in {"http", "https"}:
+        return True
+    if provider in {"openai", "anthropic", "remote", "api"}:
+        return True
+    return False
+
+
 def _recompute_hashes(edr: dict[str, Any], input_payload: dict[str, Any], output_payload: dict[str, Any]) -> dict[str, str]:
     input_hash = hash_json(input_payload)
     output_hash = hash_json(output_payload)
@@ -192,6 +206,7 @@ def replay_edr(
     *,
     output_root: str = "./artifacts/replay",
     allow_side_effects: bool = False,
+    allow_network: bool = False,
     runtime_environment: str = "default",
 ) -> tuple[ReplayReport, Path]:
     source_path = Path(edr_path).resolve()
@@ -211,7 +226,10 @@ def replay_edr(
 
     try:
         if edr.get("side_effects") != "none" and not allow_side_effects:
-            raise ReplayError(DivergenceReason.SIDE_EFFECTS_REFUSED, "side-effectful replay refused; use --allow-side-effects")
+            raise ReplayError(
+                DivergenceReason.SIDE_EFFECTS_NOT_ALLOWED,
+                "side-effectful replay refused; use --allow-side-effects",
+            )
 
         replay_info = edr.get("replay") or {}
         if replay_info.get("replayable") is not True:
@@ -224,6 +242,11 @@ def replay_edr(
 
         expected_env = required_inputs.get("runtime_environment")
         environment_mismatch = expected_env is not None and expected_env != runtime_environment
+        if _is_networked_replay(edr.get("decision") or {}) and not allow_network:
+            raise ReplayError(
+                DivergenceReason.NETWORK_NOT_ALLOWED,
+                "networked replay refused; use --allow-network",
+            )
 
         output_payload = _execute_replay(edr, input_payload, runtime_environment)
         recomputed = _recompute_hashes(edr, input_payload, output_payload)
@@ -254,7 +277,11 @@ def replay_edr(
 
     except ReplayError as exc:
         reason_codes.append(exc.reason.value)
-        status = ReplayStatus.REFUSED if exc.reason == DivergenceReason.SIDE_EFFECTS_REFUSED else ReplayStatus.ERROR
+        refusal_reasons = {
+            DivergenceReason.SIDE_EFFECTS_NOT_ALLOWED,
+            DivergenceReason.NETWORK_NOT_ALLOWED,
+        }
+        status = ReplayStatus.REFUSED if exc.reason in refusal_reasons else ReplayStatus.ERROR
     except Exception:  # pragma: no cover
         reason_codes.append(DivergenceReason.EXECUTION_ERROR.value)
         status = ReplayStatus.ERROR
@@ -284,6 +311,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Replay and verify an EDR artifact offline")
     parser.add_argument("edr_json", help="Path to EDR JSON artifact")
     parser.add_argument("--allow-side-effects", action="store_true", help="Allow replays where side_effects is not none")
+    parser.add_argument("--allow-network", action="store_true", help="Allow replay execution paths that require network")
     parser.add_argument("--output-root", default="./artifacts/replay", help="Replay report output root")
     parser.add_argument(
         "--runtime-environment",
@@ -299,6 +327,7 @@ def main(argv: list[str] | None = None) -> int:
         args.edr_json,
         output_root=args.output_root,
         allow_side_effects=args.allow_side_effects,
+        allow_network=args.allow_network,
         runtime_environment=args.runtime_environment,
     )
     print(json.dumps({"status": report.status, "reason_codes": report.reason_codes, "report_path": str(report_path)}))

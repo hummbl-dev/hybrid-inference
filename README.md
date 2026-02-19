@@ -36,6 +36,7 @@ scripts/edr-replay artifacts/edr/YYYY/MM/DD/<decision_core_hash>.json
 
 Safety defaults:
 - Refuses replay when `side_effects != "none"` unless `--allow-side-effects`.
+- Refuses replay for networked providers unless `--allow-network`.
 - Uses deterministic local replay only (no external provider calls).
 - Writes replay reports to `artifacts/replay/YYYY/MM/DD/<decision_core_hash>.json`.
 - Replay report schema is pinned at `schemas/replay/REPLAY_REPORT_v1.0.0.json`.
