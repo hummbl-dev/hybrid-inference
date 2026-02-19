@@ -1,7 +1,10 @@
+import hashlib
 import json
 from pathlib import Path
 
-from src.hybrid_inference.edr import build_edr, canonicalize
+from jsonschema import validate
+
+from src.hybrid_inference.edr import build_edr, canonicalize, hash_json
 from src.hybrid_inference.replay import ReplayStatus, replay_edr
 
 
@@ -71,6 +74,9 @@ def test_replay_match_with_deterministic_stub(tmp_path):
     assert report.checks["output_hash_match"] is True
     assert report.checks["decision_core_hash_match"] is True
     assert report.checks["edr_hash_match"] is True
+    report_payload = report.__dict__.copy()
+    observed_report_hash = report_payload.pop("report_hash")
+    assert observed_report_hash == hash_json(report_payload)
     assert report_path.exists()
 
 
@@ -118,3 +124,20 @@ def test_replay_diverges_when_decision_core_mismatch_with_matching_output_hash(t
     assert report.checks["output_hash_match"] is True
     assert report.checks["decision_core_hash_match"] is False
     assert "DECISION_CORE_MISMATCH" in report.reason_codes
+
+
+def test_replay_report_validates_against_schema(tmp_path):
+    edr_path = _build_replay_fixture(tmp_path)
+    report, _ = replay_edr(
+        str(edr_path),
+        output_root=str(tmp_path / "artifacts" / "replay"),
+        runtime_environment="ci-stub",
+    )
+
+    schema = json.loads(Path("schemas/replay/REPLAY_REPORT_v1.0.0.json").read_text())
+    validate(instance=report.__dict__, schema=schema)
+
+
+def test_replay_report_schema_v1_0_0_is_immutable_hash_pinned():
+    schema_bytes = Path("schemas/replay/REPLAY_REPORT_v1.0.0.json").read_bytes()
+    assert hashlib.sha256(schema_bytes).hexdigest() == "84362e7b44c4528048fb66625dc886c5548730ef4c5ff53273d26d89aeedd3b8"
