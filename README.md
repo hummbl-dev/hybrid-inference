@@ -45,6 +45,7 @@ Safety defaults:
   - `REFUSED`: `SIDE_EFFECTS_NOT_ALLOWED`, `NETWORK_NOT_ALLOWED`
   - `ERROR`: `REPLAY_NOT_REPLAYABLE`, `INPUT_POINTER_MISSING`, `PROVIDER_NOT_SUPPORTED`, `EXECUTION_ERROR`
   - `DIVERGED`: `INPUT_HASH_MISMATCH`, `OUTPUT_HASH_MISMATCH`, `DECISION_CORE_MISMATCH`, `EDR_HASH_MISMATCH`, `ENVIRONMENT_MISMATCH`
+- Operator details and remediation playbook: `docs/replay-reason-codes.md`.
 
 ## Authority + lease boundary
 `/v1/chat/completions` accepts optional typed `authority`:
