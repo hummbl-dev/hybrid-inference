@@ -23,3 +23,6 @@ Each request writes a schema-validated EDR artifact to:
 `artifacts/edr/YYYY/MM/DD/<decision_core_hash>.json`
 
 Schema `EDR_v1.0.0` is hash-pinned in tests to enforce immutability.
+
+## Governance
+CAES: `governance/CAES_SPEC.md` (v1.0.0, hash-pinned).

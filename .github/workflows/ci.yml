@@ -32,5 +32,8 @@ jobs:
           actual="$(sha256sum schemas/edr/EDR_v1.0.0.json | awk '{print $1}')"
           test "$actual" = "$expected"
 
+      - name: Verify CAES spec hash pin
+        run: sha256sum -c governance/CAES_CANONICAL.sha256
+
       - name: Run tests
         run: pytest -q
