@@ -42,7 +42,10 @@ jobs:
           test "$actual" = "$expected"
 
       - name: Replay invariant adversarial gates
-        run: pytest -q tests/test_edr_replay.py
+        run: pytest -q tests/test_edr_replay.py -k "not reason_code_contract_lock and not reason_codes_emitted_are_within_contract"
+
+      - name: Replay reason-code contract lock gate
+        run: pytest -q tests/test_edr_replay.py -k "reason_code_contract_lock or reason_codes_emitted_are_within_contract"
 
       - name: Authority invariant adversarial gates
         run: pytest -q tests/test_authority.py

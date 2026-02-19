@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+- Added replay reason-code contract lock tests and dedicated CI gate.
+- Added operator reference for replay reason codes in `docs/replay-reason-codes.md`.
+- Replay now emits structured replay reports with `EXECUTION_ERROR` for malformed/non-object EDR JSON roots instead of surfacing uncaught loader errors.
+
 ## 0.2.2
 - Added GitHub Actions CI workflow for push/pull request validation.
 - CI now runs dependency install, EDR schema hash pin validation, and `pytest -q` across Python 3.11 and 3.12.
