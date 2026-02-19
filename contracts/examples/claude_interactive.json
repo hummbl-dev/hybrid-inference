@@ -1,0 +1,6 @@
+{
+  "classification": "PUBLIC",
+  "latency": "interactive",
+  "provider_allowlist": ["anthropic", "openai", "local"],
+  "model_preferences": ["claude-sonnet-4-5"]
+}
