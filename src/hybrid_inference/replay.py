@@ -25,7 +25,7 @@ class DivergenceReason(StrEnum):
     INPUT_POINTER_MISSING = "INPUT_POINTER_MISSING"
     INPUT_HASH_MISMATCH = "INPUT_HASH_MISMATCH"
     OUTPUT_HASH_MISMATCH = "OUTPUT_HASH_MISMATCH"
-    DECISION_CORE_HASH_MISMATCH = "DECISION_CORE_HASH_MISMATCH"
+    DECISION_CORE_MISMATCH = "DECISION_CORE_MISMATCH"
     EDR_HASH_MISMATCH = "EDR_HASH_MISMATCH"
     ENVIRONMENT_MISMATCH = "ENVIRONMENT_MISMATCH"
     PROVIDER_NOT_SUPPORTED = "PROVIDER_NOT_SUPPORTED"
@@ -224,8 +224,10 @@ def replay_edr(
             reason_codes.append(DivergenceReason.OUTPUT_HASH_MISMATCH.value)
             if environment_mismatch:
                 reason_codes.append(DivergenceReason.ENVIRONMENT_MISMATCH.value)
-        if not checks["decision_core_hash_match"]:
-            reason_codes.append(DivergenceReason.DECISION_CORE_HASH_MISMATCH.value)
+        elif not checks["decision_core_hash_match"]:
+            # Output matched, so this indicates non-output decision core drift
+            # (e.g., decision_factors/constraints/failure/replay fields).
+            reason_codes.append(DivergenceReason.DECISION_CORE_MISMATCH.value)
         if not checks["edr_hash_match"]:
             reason_codes.append(DivergenceReason.EDR_HASH_MISMATCH.value)
 

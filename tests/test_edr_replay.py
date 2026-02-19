@@ -117,4 +117,4 @@ def test_replay_diverges_when_decision_core_mismatch_with_matching_output_hash(t
     assert report.status == ReplayStatus.DIVERGED.value
     assert report.checks["output_hash_match"] is True
     assert report.checks["decision_core_hash_match"] is False
-    assert "DECISION_CORE_HASH_MISMATCH" in report.reason_codes
+    assert "DECISION_CORE_MISMATCH" in report.reason_codes
