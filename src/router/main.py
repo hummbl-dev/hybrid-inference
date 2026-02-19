@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from src.hybrid_inference.edr import EDRFailure
 from src.hybrid_inference.middleware.edr_emitter import emit_edr
@@ -55,7 +55,45 @@ class ChatReq(BaseModel):
     messages: list[dict[str, Any]] = Field(default_factory=list)
     stream: bool = False
     routing_contract: dict[str, Any] | None = None
-    authority: dict[str, Any] | None = None
+    authority: Any | None = None
+
+
+class AuthorityPayload(BaseModel):
+    issued_by: str
+    scope: str | list[str]
+    ttl: int
+    lease_id: str
+
+
+def _authority_error_code_from_validation(exc: ValidationError) -> str:
+    if not exc.errors():
+        return "AUTHORITY_INVALID"
+
+    field = exc.errors()[0].get("loc", (None,))[0]
+    if field == "issued_by":
+        return "AUTHORITY_ISSUER_INVALID"
+    if field == "scope":
+        return "AUTHORITY_SCOPE_INVALID"
+    if field == "ttl":
+        return "AUTHORITY_TTL_INVALID"
+    if field == "lease_id":
+        return "AUTHORITY_LEASE_INVALID"
+    return "AUTHORITY_INVALID"
+
+
+def _normalized_authority_or_raise(authority: Any) -> dict[str, Any] | None:
+    if authority is None:
+        return None
+    if not isinstance(authority, dict):
+        raise AuthorityError(code="AUTHORITY_INVALID", message="authority block must be an object")
+
+    try:
+        normalized = AuthorityPayload.model_validate(authority)
+    except ValidationError as exc:
+        code = _authority_error_code_from_validation(exc)
+        raise AuthorityError(code=code, message="authority payload failed typed validation") from exc
+
+    return normalized.model_dump()
 
 
 @app.get("/health")
@@ -78,8 +116,9 @@ async def chat(req: ChatReq, request: Request) -> dict[str, Any]:
     ]
 
     try:
+        normalized_authority = _normalized_authority_or_raise(req.authority)
         validate_authority(
-            req.authority,
+            normalized_authority,
             required_scope="chat:completions",
             authority_required=authority_required,
         )

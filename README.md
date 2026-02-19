@@ -43,17 +43,18 @@ Safety defaults:
 - CI runs adversarial replay invariant gates (`tests/test_edr_replay.py`) before full suite.
 
 ## Authority + lease boundary
-`/v1/chat/completions` accepts optional `authority`:
+`/v1/chat/completions` accepts optional typed `authority`:
 
 ```json
 {
   "issued_by": "ops",
-  "scope": "chat:completions",
+  "scope": ["chat:completions", "metrics:read"],
   "ttl": 60,
   "lease_id": "lease-123"
 }
 ```
 
+`scope` may be a single string or an array of strings.  
 When `routing_contract.authority_required` is `true`, missing/invalid authority is rejected at router boundary (`403`) and emitted as EDR failure type `authority_violation`.
 
 CI runs authority adversarial invariant gates (`tests/test_authority.py`) to guard replay-safe lease handling and strict authority validation failures.
