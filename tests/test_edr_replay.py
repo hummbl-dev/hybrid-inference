@@ -59,6 +59,40 @@ def _build_replay_fixture(tmp_path: Path, *, side_effects: str = "none") -> Path
     return edr_path
 
 
+def _build_network_replay_fixture(tmp_path: Path) -> Path:
+    inputs_path = _write_json(
+        tmp_path / "inputs" / "required_inputs_network.json",
+        {
+            "runtime_environment": "ci-stub",
+            "input_payload": {
+                "messages_sha256": "network-abc123",
+                "stream": False,
+                "model": "gpt-4.1-mini",
+            },
+        },
+    )
+    edr = build_edr(
+        request_id="req-replay-network-1",
+        contract={"classification": "INTERNAL", "latency": "interactive"},
+        decision={
+            "provider": "openai",
+            "model": "gpt-4.1-mini",
+            "protocol": "https",
+            "path": "/v1/chat/completions",
+        },
+        decision_factors=["REMOTE_PROVIDER_ALLOWED"],
+        constraints_applied=["max_swap_bytes=0", "max_mem_percent=92.0"],
+        input_payload={"messages_sha256": "network-abc123", "stream": False, "model": "gpt-4.1-mini"},
+        output_payload={"id": "remote_1", "object": "chat.completion"},
+        failure=None,
+        side_effects="none",
+        replay_pointer=str(inputs_path),
+    )
+    edr_path = tmp_path / "edr" / "sample_network_edr.json"
+    _write_json(edr_path, edr.__dict__)
+    return edr_path
+
+
 def test_replay_match_with_deterministic_stub(tmp_path):
     edr_path = _build_replay_fixture(tmp_path)
 
@@ -80,7 +114,7 @@ def test_replay_match_with_deterministic_stub(tmp_path):
     assert report_path.exists()
 
 
-def test_replay_refuses_side_effects_by_default(tmp_path):
+def test_replay_refuses_side_effects_without_flag(tmp_path):
     edr_path = _build_replay_fixture(tmp_path, side_effects="external")
 
     report, _ = replay_edr(
@@ -90,7 +124,20 @@ def test_replay_refuses_side_effects_by_default(tmp_path):
     )
 
     assert report.status == ReplayStatus.REFUSED.value
-    assert "SIDE_EFFECTS_REFUSED" in report.reason_codes
+    assert "SIDE_EFFECTS_NOT_ALLOWED" in report.reason_codes
+
+
+def test_replay_refuses_network_without_flag(tmp_path):
+    edr_path = _build_network_replay_fixture(tmp_path)
+
+    report, _ = replay_edr(
+        str(edr_path),
+        output_root=str(tmp_path / "artifacts" / "replay"),
+        runtime_environment="ci-stub",
+    )
+
+    assert report.status == ReplayStatus.REFUSED.value
+    assert "NETWORK_NOT_ALLOWED" in report.reason_codes
 
 
 def test_replay_diverges_on_environment_mismatch(tmp_path):
@@ -141,3 +188,15 @@ def test_replay_report_validates_against_schema(tmp_path):
 def test_replay_report_schema_v1_0_0_is_immutable_hash_pinned():
     schema_bytes = Path("schemas/replay/REPLAY_REPORT_v1.0.0.json").read_bytes()
     assert hashlib.sha256(schema_bytes).hexdigest() == "84362e7b44c4528048fb66625dc886c5548730ef4c5ff53273d26d89aeedd3b8"
+
+
+def test_replay_report_persist_is_atomic_and_no_tmp_left(tmp_path):
+    edr_path = _build_replay_fixture(tmp_path)
+    report, report_path = replay_edr(
+        str(edr_path),
+        output_root=str(tmp_path / "artifacts" / "replay"),
+        runtime_environment="ci-stub",
+    )
+    assert report.status == ReplayStatus.MATCH.value
+    assert report_path.exists()
+    assert list((tmp_path / "artifacts" / "replay").rglob("*.tmp")) == []
