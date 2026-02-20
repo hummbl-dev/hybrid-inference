@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+- Updated CI to execute `scripts/run_ci_local_gates.sh` directly after bootstrap, making CI gate order and local gate order identical.
+- Reduced CI drift risk by removing duplicated workflow gate commands in favor of the shared parity runner.
+
 ## 0.2.3
 - Added replay reason-code contract lock tests and dedicated CI gate.
 - Added operator reference for replay reason codes in `docs/replay-reason-codes.md`.

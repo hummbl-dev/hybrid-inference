@@ -24,29 +24,5 @@ jobs:
       - name: Install dependencies
         run: bash scripts/bootstrap_test_env.sh
 
-      - name: Validate EDR schema hash pin
-        run: |
-          expected="2228890cb38c4d89a2a4ab46ba1b1430c2066f8c74548b8beb95e298f87ad45a"
-          actual="$(sha256sum schemas/edr/EDR_v1.0.0.json | awk '{print $1}')"
-          test "$actual" = "$expected"
-
-      - name: Verify CAES spec hash pin
-        run: sha256sum -c governance/CAES_CANONICAL.sha256
-
-      - name: Validate replay report schema hash pin
-        run: |
-          expected="84362e7b44c4528048fb66625dc886c5548730ef4c5ff53273d26d89aeedd3b8"
-          actual="$(sha256sum schemas/replay/REPLAY_REPORT_v1.0.0.json | awk '{print $1}')"
-          test "$actual" = "$expected"
-
-      - name: Replay invariant adversarial gates
-        run: .venv/bin/pytest -q tests/test_edr_replay.py -k "not reason_code_contract_lock and not reason_codes_emitted_are_within_contract"
-
-      - name: Replay reason-code contract lock gate
-        run: .venv/bin/pytest -q tests/test_edr_replay.py -k "reason_code_contract_lock or reason_codes_emitted_are_within_contract"
-
-      - name: Authority invariant adversarial gates
-        run: .venv/bin/pytest -q tests/test_authority.py
-
-      - name: Run tests
-        run: .venv/bin/pytest -q
+      - name: Run parity gate sequence (same as local)
+        run: bash scripts/run_ci_local_gates.sh
