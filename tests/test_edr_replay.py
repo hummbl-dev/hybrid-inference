@@ -192,6 +192,38 @@ def test_replay_errors_when_required_inputs_pointer_missing(tmp_path):
     assert "INPUT_POINTER_MISSING" in report.reason_codes
 
 
+def test_replay_errors_when_required_inputs_pointer_whitespace_only(tmp_path):
+    edr_path = _build_replay_fixture(tmp_path)
+    edr_payload = json.loads(edr_path.read_text())
+    edr_payload["replay"]["required_inputs_pointer"] = "   "
+    _write_json(edr_path, edr_payload)
+
+    report, _ = replay_edr(
+        str(edr_path),
+        output_root=str(tmp_path / "artifacts" / "replay"),
+        runtime_environment="ci-stub",
+    )
+
+    assert report.status == ReplayStatus.ERROR.value
+    assert "INPUT_POINTER_MISSING" in report.reason_codes
+
+
+def test_replay_errors_when_required_inputs_pointer_inline_with_padding(tmp_path):
+    edr_path = _build_replay_fixture(tmp_path)
+    edr_payload = json.loads(edr_path.read_text())
+    edr_payload["replay"]["required_inputs_pointer"] = " inline "
+    _write_json(edr_path, edr_payload)
+
+    report, _ = replay_edr(
+        str(edr_path),
+        output_root=str(tmp_path / "artifacts" / "replay"),
+        runtime_environment="ci-stub",
+    )
+
+    assert report.status == ReplayStatus.ERROR.value
+    assert "INPUT_POINTER_MISSING" in report.reason_codes
+
+
 def test_replay_errors_when_provider_unsupported_even_if_network_allowed(tmp_path):
     edr_path = _build_network_replay_fixture(tmp_path)
 
