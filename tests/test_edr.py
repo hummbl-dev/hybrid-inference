@@ -20,8 +20,12 @@ def test_edr_emitted_on_success(monkeypatch, tmp_path):
     async def fake_ollama_chat(base_url, model, messages, stream=False):
         return {"message": {"content": "ok"}}
 
+    def healthy(*args, **kwargs):
+        return Health(True, "ok")
+
     monkeypatch.setattr(main.settings, "edr_root_path", str(tmp_path / "edr"))
     monkeypatch.setattr(main, "ollama_chat", fake_ollama_chat)
+    monkeypatch.setattr(main, "check_local_health", healthy)
 
     client = TestClient(main.app)
     response = client.post(
@@ -68,8 +72,12 @@ def test_edr_emitted_on_provider_failure(monkeypatch, tmp_path):
     async def broken_ollama_chat(base_url, model, messages, stream=False):
         raise RuntimeError("provider down")
 
+    def healthy(*args, **kwargs):
+        return Health(True, "ok")
+
     monkeypatch.setattr(main.settings, "edr_root_path", str(tmp_path / "edr"))
     monkeypatch.setattr(main, "ollama_chat", broken_ollama_chat)
+    monkeypatch.setattr(main, "check_local_health", healthy)
 
     client = TestClient(main.app)
     response = client.post(
@@ -144,8 +152,12 @@ def test_edr_validates_against_schema(monkeypatch, tmp_path):
     async def fake_ollama_chat(base_url, model, messages, stream=False):
         return {"message": {"content": "ok"}}
 
+    def healthy(*args, **kwargs):
+        return Health(True, "ok")
+
     monkeypatch.setattr(main.settings, "edr_root_path", str(tmp_path / "edr"))
     monkeypatch.setattr(main, "ollama_chat", fake_ollama_chat)
+    monkeypatch.setattr(main, "check_local_health", healthy)
 
     client = TestClient(main.app)
     response = client.post(

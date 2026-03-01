@@ -78,8 +78,9 @@ def _resolve_inputs_pointer(edr_path: Path, pointer: str) -> Path:
 def _load_required_inputs(edr_path: Path, edr: dict[str, Any]) -> dict[str, Any]:
     replay = edr.get("replay") or {}
     pointer = replay.get("required_inputs_pointer")
-    if not isinstance(pointer, str) or not pointer:
+    if not isinstance(pointer, str) or not pointer.strip():
         raise ReplayError(DivergenceReason.INPUT_POINTER_MISSING, "missing replay.required_inputs_pointer")
+    pointer = pointer.strip()
     if pointer == "inline":
         raise ReplayError(DivergenceReason.INPUT_POINTER_MISSING, "inline replay inputs are not available in EDR v1.0.0")
 
